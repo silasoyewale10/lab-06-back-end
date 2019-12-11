@@ -1,6 +1,5 @@
 'use strict';
-let lat;
-let lng;
+
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -8,45 +7,57 @@ const app = express();
 app.use(cors());
 const PORT = process.env.PORT || 3000;
 // LOCATION DATA
-function FormattedData(searchQuery, formattedQuery, latitude, longitude) {
-  this.search_query = searchQuery;
-  this.formatted_query = formattedQuery;
-  this.latitude = latitude;
-  this.longitude = longitude;
+
+function FormattedData(query, location) {
+    this.search_query = query;
+    this.formatted_query = location.formatted_address;
+    this.latitude = location.geometry.location.lat;
+    this.longitude = location.geometry.location.lng;
 }
-// const entry = new FormattedData()
-
-const interestedData = require('./data/geo.json')
-console.log(interestedData.results[0].address_components[0].long_name)   // search query
-var search_query = interestedData.results[0].address_components[0].long_name;
-
-console.log(interestedData.results[0].formatted_address)         // formatted query
-var formatted_query = interestedData.results[0].formatted_address;
-
-console.log(interestedData.results[0].geometry.location.lat)  //latitude
-var latitude = interestedData.results[0].geometry.location.lat
-
-console.log(interestedData.results[0].geometry.location.lng)  //latitude
-var longitude = interestedData.results[0].geometry.location.lng
 
 
-app.get('/location', (request, response) => {
+app.get('/location', handleLocationRequest)
 
-    console.log('LOCATIONS END FIRING');
-    response.send({
-        "search_query": search_query,
-        "formatted_query": "Seattle, WA, USA",
-        "latitude": latitude,
-        "longitude": "-122.332071"
-      });
-    // response.send(interestedData.results[0].geometry.location)
+function handleLocationRequest(request, response) {
+
+    let query = request.query.data;
+
+    const interestedData = require('./data/geo.json')
+
+    let newLocation = new FormattedData(query, interestedData.results[0]) 
+
+    response.send(newLocation)
+}
 
 
+function FormattedTimeAndWeather(query, specificweather) {
+    
+    this.forecast = specificweather.summary
+    this.time = new Date(specificweather.time * 1000).toDateString();
+}
 
 
-});
+app.get('/weather', handleWeatherRequest)
 
+function handleWeatherRequest(request, response) {
+    var arrDaysWeather = [];
+    let query = request.query.data;
+    const weatherData = require('./data/darksky.json')
+    console.log(weatherData.daily.data.length)
+
+    for (var x = 0; x < weatherData.daily.data.length; x++){
+        var newWeather = new FormattedTimeAndWeather(query, weatherData.daily.data[x])
+        arrDaysWeather.push(newWeather)
+    }
+    response.send(arrDaysWeather)
+}
+
+app.get('/*', function(request, response){
+    response.status(404).send('Error Loading Results')
+  })
+
+console.log('LOCATIONS END FIRING');
 
 app.listen(PORT, () => {
-    console.log("Port is working and listening  on port " + PORT)
+    console.log("Port is working and listening  onnnnn port " + PORT)
 });

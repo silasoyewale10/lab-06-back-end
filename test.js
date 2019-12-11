@@ -1,35 +1,63 @@
 'use strict';
-let lat;
-let lng;
+
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const app = express();
-const user = require('user');
 app.use(cors());
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 // LOCATION DATA
-function FormattedData(searchQuery, formattedQuery, latitude, longitude) {
-  this.search_query = searchQuery;
-  this.formatted_query = formattedQuery;
-  this.latitude = latitude;
-  this.longitude = longitude;
+
+function FormattedData(query, location) {
+    this.search_query = query;
+    this.formatted_query = location.formatted_address;
+    this.latitude = location.geometry.location.lat;
+    this.longitude = location.geometry.location.lng;
 }
-app.get('./data/geo.json', (request, response) => {
-  const searchQuery = request.query.data;
-  const urlToVisit = `https://maps.googleapis.com/maps/api/geocode/json?address=${searchQuery}&key=${process.env.GOOGLE_MAPS}`;
-  user.get(urlToVisit).then(responseFromUser => {
-    const geoData = responseFromUser.body;
-    //console.log('geodata', geoData);
-    const specificGeoData = geoData.results[0];
-    const formattedQuery = specificGeoData.formatted_address;
-    lat = specificGeoData.geometry.location.lat;
-    //console.log(lat);
-    lng = specificGeoData.geometry.location.lng;
-    response.send(new FormattedData(searchQuery, formattedQuery, lat, lng));
-  }).catch(error => {
-    response.status(500).send(error.message);
-    console.error(error);
-  });
-})
-app.get('./data/geo.json', getLocation);
+
+
+app.get('/location', handleLocationRequest)
+
+function handleLocationRequest(request, response) {
+
+    let query = request.query.data;
+
+    const interestedData = require('./data/geo.json')
+
+    let newLocation = new FormattedData(query, interestedData.results[0]) 
+
+    response.send(newLocation)
+}
+
+
+function FormattedTimeAndWeather(query, specificweather) {
+    
+    this.forecast = specificweather.summary
+    this.time = new Date(specificweather.time * 1000).toDateString();
+}
+
+
+app.get('/weather', handleWeatherRequest)
+
+function handleWeatherRequest(request, response) {
+    var arrDaysWeather = [];
+    let query = request.query.data;
+    const weatherData = require('./data/darksky.json')
+    console.log(weatherData.daily.data.length)
+
+    for (var x = 0; x < weatherData.daily.data.length; x++){
+        var newWeather = new FormattedTimeAndWeather(query, weatherData.daily.data[x])
+        arrDaysWeather.push(newWeather)
+    }
+    response.send(arrDaysWeather)
+}
+
+app.get('/*', function(request, response){
+    response.status(404).send('Error Loading Results')
+  })
+
+console.log('LOCATIONS END FIRING');
+
+app.listen(PORT, () => {
+    console.log("Port is working and listening  onnnnn port " + PORT)
+});
