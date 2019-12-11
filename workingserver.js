@@ -1,6 +1,5 @@
 'use strict';
-// let lat;
-// let lng;
+
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -31,27 +30,31 @@ function handleLocationRequest(request, response) {
 }
 
 
+function FormattedTimeAndWeather(query, specificweather) {
+    
+    this.forecast = specificweather.summary
+    this.time = new Date(specificweather.time * 1000).toDateString();
+}
 
-// app.get('/weather', handleWeatherRequest)
 
-// function handleWeatherRequest(request, response) {
+app.get('/weather', handleWeatherRequest)
 
-//     let query = request.query.data;
+function handleWeatherRequest(request, response) {
+    var arrDaysWeather = [];
+    let query = request.query.data;
+    const weatherData = require('./data/darksky.json')
+    console.log(weatherData.daily.data.length)
 
-//     const interestedData = require('./darksky/geo.json')
-
-//     let newLocation = new FormattedData(query, interestedData) 
-
-//     response.send(newLocation)
-// }
-
-//for error message
+    for (var x = 0; x < weatherData.daily.data.length; x++){
+        var newWeather = new FormattedTimeAndWeather(query, weatherData.daily.data[x])
+        arrDaysWeather.push(newWeather)
+    }
+    response.send(arrDaysWeather)
+}
 
 app.get('/*', function(request, response){
     response.status(404).send('Error Loading Results')
   })
-
-
 
 console.log('LOCATIONS END FIRING');
 
